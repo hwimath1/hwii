@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>삼각함수 최대최소</title>
+  <!-- MathJax 로드 (LaTeX 렌더링) -->
+  <script
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+    defer
+  ></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: sans-serif;
+      background: #f5f5f5;
+    }
+    header, main, footer {
+      width: 90%;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    header {
+      text-align: center;
+      padding: 1rem;
+    }
+    h1 {
+      margin: 1rem 0;
+      color: #333;
+    }
+    .centered {
+      text-align: center;
+    }
+    .difficulty-section {
+      display: inline-block;
+      margin: 0.5rem;
+    }
+    .hidden {
+      display: none;
+    }
+    .question-container {
+      background: #fff;
+      margin: 1rem 0;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+    }
+    .question-text {
+      margin-bottom: 1rem;
+    }
+    .options-container {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .option-btn {
+      border: 1px solid #bbb;
+      border-radius: 4px;
+      padding: 0.5rem;
+      background: #fafafa;
+      cursor: pointer;
+      text-align: left;
+      transition: background 0.2s;
+    }
+    .option-btn:hover {
+      background: #eee;
+    }
+    .scoreboard, .lives-info, .timer-info, .energy-bar {
+      margin-top: 0.5rem;
+      font-weight: bold;
+    }
+    .energy-bar {
+      width: 100%;
+      height: 15px;
+      background: #ddd;
+      margin: 0.5rem 0;
+      border-radius: 8px;
+      position: relative;
+      overflow: hidden;
+    }
+    .energy-bar-fill {
+      height: 15px;
+      background: linear-gradient(90deg, #67c6ff, #0066ff);
+      width: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+    .hidden-correct-answer {
+      color: red;
+      font-weight: bold;
+      margin-top: 0.5rem;
+    }
+    .game-over {
+      color: #d33;
+      font-weight: bold;
+      margin-top: 1rem;
+      font-size: 1.2rem;
+    }
+    .final-score {
+      color: #333;
+      font-size: 1.1rem;
+      margin-top: 1rem;
+    }
+    .response-area {
+      white-space: pre-wrap;
+      background: #fafafa;
+      border: 1px solid #ccc;
+      padding: 0.5rem;
+      margin-top: 0.5rem;
+      border-radius: 4px;
+    }
+    .name-input {
+      display: block;
+      margin: 1rem auto;
+      text-align: center;
+    }
+    .name-input input {
+      width: 250px;
+      padding: 0.5rem;
+      font-size: 1rem;
+    }
+    .start-game-btn {
+      padding: 0.7rem 1rem;
+      font-size: 1rem;
+      margin: 1rem;
+      cursor: pointer;
+      background: #0066ff;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+    }
+    .start-game-btn:hover {
+      background: #0052cc;
+    }
+    .score-submit-btn {
+      margin-top: 1rem;
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      cursor: pointer;
+      background: #00aa00;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+    }
+    .score-submit-btn:hover {
+      background: #008800;
+    }
+    .disabled {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>삼각함수 최대최소</h1>
+  </header>
+
+  <!-- 이름 입력 화면 -->
+  <div id="name-screen" class="centered">
+    <div class="name-input">
+      <label for="playerName">이름을 입력하세요</label><br />
+      <input type="text" id="playerName" placeholder="이름" />
+    </div>
+
+    <div>
+      <p>난이도를 선택하세요</p>
+      <div class="difficulty-section">
+        <button class="start-game-btn" onclick="startGame('최상')">최상</button>
+      </div>
+      <div class="difficulty-section">
+        <button class="start-game-btn" onclick="startGame('상')">상</button>
+      </div>
+      <div class="difficulty-section">
+        <button class="start-game-btn" onclick="startGame('중')">중</button>
+      </div>
+      <div class="difficulty-section">
+        <button class="start-game-btn" onclick="startGame('하')">하</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 게임 진행 화면 -->
+  <main id="game-screen" class="hidden">
+    <div class="scoreboard">점수: <span id="score">0</span></div>
+    <div class="timer-info">전체 진행 시간: <span id="global-timer">0</span>초</div>
+    <div class="lives-info">남은 기회: <span id="lives">3</span></div>
+
+    <div class="energy-bar" id="energyBar">
+      <div class="energy-bar-fill" id="energyBarFill"></div>
+    </div>
+
+    <div id="question-section"></div>
+
+    <div class="game-over hidden" id="gameOverMsg"></div>
+    <div class="final-score hidden" id="finalScoreMsg"></div>
+
+    <button class="score-submit-btn hidden" id="scoreSubmitBtn" onclick="submitScore()">
+      점수 전송
+    </button>
+    <div id="response" class="response-area"></div>
+  </main>
+
+  <script>
+    /********************************************
+     * 문제/보기 데이터 (하나도 빠짐없이, 무작위 출제)
+     * "최솇값" -> "최솟값" 으로 수정 완료
+     * 모든 "해설"은 제거
+     ********************************************/
+
+    const allQuestions = [
+      // =============== 1) 1~10번 문제  ===============
+      {
+        question: `
+        다음 함수 \\(y = \\sin\\bigl(\\dfrac{\\pi}{2} - x\\bigr) + \\cos x + 1\\)의 
+        최댓값과 최솟값을 구하여라. 
+        (\\(\\sin\\bigl(\\dfrac{\\pi}{2} - x\\bigr) = \\cos x\\) 이용)
+        `,
+        options: [
+          "\\(\\text{최댓값: } 3, \\text{최솟값: } -1\\)",
+          "\\(\\text{최댓값: } 2, \\text{최솟값: } -3\\)",
+          "\\(\\text{최댓값: } 1, \\text{최솟값: } -2\\)",
+          "\\(\\text{최댓값: } 3, \\text{최솟값: } 0\\)",
+        ],
+        answer: 0
+      },
+      {
+        question: `
+        함수 \\( y = \\cos\\bigl(\\dfrac{\\pi}{2} + x\\bigr) - 2\\sin x - 1 \\)의 
+        최댓값과 최솟값을 구하여라.
+        (\\(\\cos\\bigl(\\dfrac{\\pi}{2}+x\\bigr)= -\\sin x\\))
+        `,
+        options: [
+          "\\(\\text{최댓값: } 1, \\text{최솟값: } -3\\)",
+          "\\(\\text{최댓값: } 0, \\text{최솟값: } -2\\)",
+          "\\(\\text{최댓값: } 2, \\text{최솟값: } -1\\)",
+          "\\(\\text{최댓값: } 0, \\text{최솟값: } -1\\)"
+        ],
+        answer: 1
+      },
+      {
+        question: `
+        함수 \\( y = \\cos(\\pi + x) - \\sin\\bigl(\\dfrac{\\pi}{2} + x\\bigr) - 1 \\)의 
+        최댓값과 최솟값을 구하여라.
+        (\\(\\cos(\\pi + x) = -\\cos x\\), \\(\\sin\\bigl(\\dfrac{\\pi}{2}+x\\bigr)=\\cos x\\))
+        `,
+        options: [
+          "\\(\\text{최댓값: } 2, \\text{최솟값: } -2\\)",
+          "\\(\\text{최댓값: } 1, \\text{최솟값: } -3\\)",
+          "\\(\\text{최댓값: } 0, \\text{최솟값: } -3\\)",
+          "\\(\\text{최댓값: } 1, \\text{최솟값: } -4\\)"
+        ],
+        answer: 1
+      },
+      {
+        question: `
+        함수 \\( y = \\sin x - \\cos\\bigl(x + \\dfrac{\\pi}{2}\\bigr) - 2 \\)의 
+        최댓값과 최솟값을 구하여라.
+        (\\(\\cos(x + \\dfrac{\\pi}{2})=-\\sin x\\))
+        `,
+        options: [
+          "\\(\\text{최댓값: } 0, \\text{최솟값: } -4\\)",
+          "\\(\\text{최댓값: } 1, \\text{최솟값: } -3\\)",
+          "\\(\\text{최댓값: } 2, \\text{최솟값: } -2\\)",
+          "\\(\\text{최댓값: } -2, \\text{최솟값: } -4\\)"
+        ],
+        answer: 0
+      },
+      {
+        question: `
+        함수 \\( y = 2\\cos x - \\sin\\bigl(x - \\dfrac{\\pi}{2}\\bigr) + 1 \\)의 
+        최댓값과 최솟값을 구하여라.
+        (\\(\\sin(x - \\dfrac{\\pi}{2}) = -\\cos x\\))
+        `,
+        options: [
+          "\\(\\text{최댓값: } 3, \\text{최솟값: } -1\\)",
+          "\\(\\text{최댓값: } 4, \\text{최솟값: } -1\\)",
+          "\\(\\text{최댓값: } 2, \\text{최솟값: } -4\\)",
+          "\\(\\text{최댓값: } 4, \\text{최솟값: } -2\\)"
+        ],
+        answer: 3
+      },
+      {
+        question: `
+        함수 \\( y = \\cos\\bigl(\\dfrac{\\pi}{2} - x\\bigr) + 2\\sin x + 1 \\)의
+        최댓값과 최솟값을 구하여라.
+        (\\(\\cos\\bigl(\\dfrac{\\pi}{2}-x\\bigr)=\\sin x\\))
+        `,
+        options: [
+          "\\(\\text{최댓값: } 3, \\text{최솟값: } -1\\)",
+          "\\(\\text{최댓값: } 4, \\text{최솟값: } -2\\)",
+          "\\(\\text{최댓값: } 4, \\text{최솟값: } -1\\)",
+          "\\(\\text{최댓값: } 2, \\text{최솟값: } -4\\)"
+        ],
+        answer: 1
+      },
+      {
+        question: `
+        함수 \\( y = \\cos(\\pi + x) - \\sin\\bigl(\\dfrac{\\pi}{2}+x\\bigr) + 3 \\)의 
+        최댓값과 최솟값을 구하여라.
+        (\\(\\cos(\\pi + x)=-\\cos x,\\ \\sin\\bigl(\\dfrac{\\pi}{2}+x\\bigr)=\\cos x\\))
+        `,
+        options: [
+          "\\(\\text{최댓값: } 5, \\text{최솟값: } 1\\)",
+          "\\(\\text{최댓값: } 3, \\text{최솟값: } -1\\)",
+          "\\(\\text{최댓값: } 4, \\text{최솟값: } 0\\)",
+          "\\(\\text{최댓값: } 2, \\text{최솟값: } -2\\)"
+        ],
+        answer: 0
+      },
+      {
+        question: `
+        함수 \\( y = 2\\sin x - \\cos\\bigl(x - \\dfrac{\\pi}{2}\\bigr) - 1 \\)의
+        최댓값과 최솟값을 구하여라.
+        (\\(\\cos(x - \\dfrac{\\pi}{2})=\\sin x\\))
+        `,
+        options: [
+          "\\(\\text{최댓값: } 2, \\text{최솟값: } -2\\)",
+          "\\(\\text{최댓값: } 0, \\text{최솟값: } -2\\)",
+          "\\(\\text{최댓값: } 1, \\text{최솟값: } -3\\)",
+          "\\(\\text{최댓값: } 0, \\text{최솟값: } -1\\)"
+        ],
+        answer: 1
+      },
+      {
+        question: `
+        함수 \\( y = \\cos\\bigl(\\dfrac{\\pi}{2}+ x\\bigr) - 2\\sin x + 1 \\)의 
+        최댓값과 최솟값을 구하여라.
+        (\\(\\cos\\bigl(\\dfrac{\\pi}{2}+x\\bigr)=-\\sin x\\))
+        `,
+        options: [
+          "\\(\\text{최댓값: }4, \\text{최솟값: }-2\\)",
+          "\\(\\text{최댓값: }3, \\text{최솟값: }-1\\)",
+          "\\(\\text{최댓값: }2, \\text{최솟값: }-2\\)",
+          "\\(\\text{최댓값: }4, \\text{최솟값: }-1\\)"
+        ],
+        answer: 0
+      },
+      {
+        question: `
+        함수 \\( y = \\sin\\bigl(\\dfrac{\\pi}{2}+x\\bigr) - 2\\cos x + 1 \\)의
+        최댓값과 최솟값을 구하여라.
+        (\\(\\sin\\bigl(\\dfrac{\\pi}{2}+x\\bigr)=\\cos x\\))
+        `,
+        options: [
+          "\\(\\text{최댓값: }2, \\text{최솟값: }0\\)",
+          "\\(\\text{최댓값: }1, \\text{최솟값: }-1\\)",
+          "\\(\\text{최댓값: }2, \\text{최솟값: }-1\\)",
+          "\\(\\text{최댓값: }3, \\text{최솟값: }-1\\)"
+        ],
+        answer: 0
+      },
+
+      // =============== 2) 13~20번 문제  ===============
+      {
+        question: `
+        함수 \\(y = |3\\sin x| - 2\\)의 최댓값과 최솟값을 구하여라.
+        (\\(-3 \\le 3\\sin x \\le 3\\Rightarrow 0 \\le |3\\sin x|\\le 3\\))
+        `,
+        options: [
+          "\\(\\text{최댓값: }1, \\text{최솟값: }-2\\)",
+          "\\(\\text{최댓값: }2, \\text{최솟값: }-2\\)",
+          "\\(\\text{최댓값: }1, \\text{최솟값: }-1\\)",
+          "\\(\\text{최댓값: }2, \\text{최솟값: }-1\\)"
+        ],
+        answer: 0
+      },
+      {
+        question: `
+        함수 \\(y = 4|\\sin x| + 1\\)의 최댓값과 최솟값을 구하여라.
+        (\\(0 \\le |\\sin x| \\le 1\\))
+        `,
+        options: [
+          "\\(\\text{최댓값: }4, \\text{최솟값: }0\\)",
+          "\\(\\text{최댓값: }5, \\text{최솟값: }1\\)",
+          "\\(\\text{최댓값: }5, \\text{최솟값: }0\\)",
+          "\\(\\text{최댓값: }4, \\text{최솟값: }1\\)"
+        ],
+        answer: 1
+      },
+      {
+        question: `
+        함수 \\(y = \\dfrac{3}{2}\\,|\\sin x - 2|\\)의 최댓값과 최솟값을 구하여라.
+        (\\(-1 \\le \\sin x \\le 1\\))
+        `,
+        options: [
+          "\\(\\text{최댓값: }\\dfrac{9}{2}, \\text{최솟값: }\\dfrac{3}{2}\\)",
+          "\\(\\text{최댓값: }\\dfrac{7}{2}, \\text{최솟값: }\\dfrac{3}{2}\\)",
+          "\\(\\text{최댓값: }5, \\text{최솟값: }\\dfrac{3}{2}\\)",
+          "\\(\\text{최댓값: }\\dfrac{9}{2}, \\text{최솟값: }\\dfrac{1}{2}\\)"
+        ],
+        answer: 0
+      },
+      {
+        question: `
+        함수 \\(y = 3|\\cos x| - 2\\)의 최댓값과 최솟값을 구하여라.
+        (\\(0 \\le |\\cos x| \\le 1\\))
+        `,
+        options: [
+          "\\(\\text{최댓값: }2, \\text{최솟값: }-2\\)",
+          "\\(\\text{최댓값: }1, \\text{최솟값: }-2\\)",
+          "\\(\\text{최댓값: }1, \\text{최솟값: }-3\\)",
+          "\\(\\text{최댓값: }2, \\text{최솟값: }-1\\)"
+        ],
+        answer: 1
+      },
+      {
+        question: `
+        함수 \\(y = \\bigl|-2\\cos x +1\\bigr| +2\\)의 최댓값과 최솟값을 구하여라.
+        (\\( -1 \\le -2\\cos x +1 \\le 3\\Rightarrow 0 \\le \\bigl|-2\\cos x +1\\bigr| \\le 3\\))
+        `,
+        options: [
+          "\\(\\text{최댓값: }4, \\text{최솟값: }0\\)",
+          "\\(\\text{최댓값: }5, \\text{최솟값: }2\\)",
+          "\\(\\text{최댓값: }5, \\text{최솟값: }1\\)",
+          "\\(\\text{최댓값: }3, \\text{최솟값: }2\\)"
+        ],
+        answer: 1
+      },
+      {
+        question: `
+        함수 \\(y = -\\bigl| -\\sin x + \\dfrac12\\bigr| +1\\)의 최댓값과 최솟값을 구하여라.
+        (\\(-\\dfrac12 \\le -\\sin x + \\dfrac12 \\le \\dfrac32\\))
+        `,
+        options: [
+          "\\(\\text{최댓값: }1, \\text{최솟값: }-\\dfrac12\\)",
+          "\\(\\text{최댓값: }\\dfrac32, \\text{최솟값: }-\\dfrac12\\)",
+          "\\(\\text{최댓값: }1, \\text{최솟값: }-1\\)",
+          "\\(\\text{최댓값: }2, \\text{최솟값: }-\\dfrac12\\)"
+        ],
+        answer: 0
+      },
+      {
+        question: `
+        함수 \\(y = -\\bigl|\\cos x -2\\bigr| +2\\)의 최댓값과 최솟값을 구하여라.
+        (\\(-3 \\le \\cos x -2 \\le -1\\Rightarrow 1 \\le |\\cos x -2| \\le 3\\))
+        `,
+        options: [
+          "\\(\\text{최댓값: }1, \\text{최솟값: }-1\\)",
+          "\\(\\text{최댓값: }2, \\text{최솟값: }-1\\)",
+          "\\(\\text{최댓값: }1, \\text{최솟값: }-2\\)",
+          "\\(\\text{최댓값: }2, \\text{최솟값: }-2\\)"
+        ],
+        answer: 0
+      },
+      {
+        question: `
+        함수 \\(y = -2|\\cos x| +3\\)의 최댓값과 최솟값을 구하여라.
+        (\\(0 \\le |\\cos x| \\le 1\\))
+        `,
+        options: [
+          "\\(\\text{최댓값: }3, \\text{최솟값: }-1\\)",
+          "\\(\\text{최댓값: }4, \\text{최솟값: }1\\)",
+          "\\(\\text{최댓값: }3, \\text{최솟값: }1\\)",
+          "\\(\\text{최댓값: }2, \\text{최솟값: }1\\)"
+        ],
+        answer: 2
+      },
+
+      // =============== 3) 24~28번  ===============
+      {
+        question: `
+        함수 \\(y = \\bigl|2\\sin x +4\\bigr| -3\\)의 최댓값과 최솟값을 구하여라.
+        (\\(-1 \\le \\sin x \\le 1\\Rightarrow -2 \\le 2\\sin x \\le 2\\))
+        `,
+        options: [
+          "\\(\\text{최댓값: }3, \\text{최솟값: }-1\\)",
+          "\\(\\text{최댓값: }2, \\text{최솟값: }-2\\)",
+          "\\(\\text{최댓값: }3, \\text{최솟값: }0\\)",
+          "\\(\\text{최댓값: }4, \\text{최솟값: }-1\\)"
+        ],
+        answer: 0
+      },
+      {
+        question: `
+        함수 \\(y = \\bigl|\\cos x + \\dfrac12\\bigr| -1\\)의 최댓값과 최솟값을 구하여라.
+        (\\(-1 \\le \\cos x \\le 1\\))
+        `,
+        options: [
+          "\\(\\text{최댓값: }\\dfrac12, \\text{최솟값: }-1\\)",
+          "\\(\\text{최댓값: }1, \\text{최솟값: }-1\\)",
+          "\\(\\text{최댓값: }\\dfrac12, \\text{최솟값: }-2\\)",
+          "\\(\\text{최댓값: }\\dfrac12, \\text{최솟값: }0\\)"
+        ],
+        answer: 0
+      },
+      {
+        question: `
+        함수 \\(y = \\bigl|\\cos x -1\\bigr| +1\\)의 최댓값과 최솟값을 구하여라.
+        (\\(-1 \\le \\cos x \\le 1\\))
+        `,
+        options: [
+          "\\(\\text{최댓값: }3, \\text{최솟값: }1\\)",
+          "\\(\\text{최댓값: }2, \\text{최솟값: }1\\)",
+          "\\(\\text{최댓값: }4, \\text{최솟값: }1\\)",
+          "\\(\\text{최댓값: }3, \\text{최솟값: }0\\)"
+        ],
+        answer: 0
+      },
+      {
+        question: `
+        함수 \\(y = \\dfrac{2\\cos\\bigl(\\dfrac{\\pi}{2}+ x\\bigr)}{\\sin x +2}\\)의 
+        최댓값과 최솊값(?)
+        --- 주의: "최솇값"->"최솟값" 으로 정정
+        최댓값과 최솟값을 구하여라.
+        (\\(\\cos\\bigl(\\dfrac{\\pi}{2}+ x\\bigr)=-\\sin x\\))
+        `,
+        options: [
+          "\\(\\text{최댓값: }2, \\text{최솟값: }-\\dfrac{2}{3}\\)",
+          "\\(\\text{최댓값: }2, \\text{최솟값: }-1\\)",
+          "\\(\\text{최댓값: }2, \\text{최솟값: }-2\\)",
+          "\\(\\text{최댓값: }3, \\text{최솟값: }-1\\)"
+        ],
+        answer: 0
+      },
+      {
+        question: `
+        함수 \\(y=\\dfrac{-\\sin x +2}{\\sin x +3}\\)의 최댓값과 최솟값을 구하여라.
+        (\\(-1 \\le \\sin x \\le 1\\))
+        `,
+        options: [
+          "\\(\\text{최댓값: }\\dfrac32, \\text{최솟값: }\\dfrac14\\)",
+          "\\(\\text{최댓값: }1, \\text{최솟값: }\\dfrac14\\)",
+          "\\(\\text{최댓값: }\\dfrac32, \\text{최솟값: }0\\)",
+          "\\(\\text{최댓값: }\\dfrac54, \\text{최솟값: }\\dfrac14\\)"
+        ],
+        answer: 0
+      },
+
+      // =============== 4) 29~33번  ===============
+      {
+        question: `
+        함수 \\(y=-\\cos^2 x +4\\sin x -2\\)의 최댓값과 최솟값을 구하여라.
+        (\\(\\cos^2 x=1-\\sin^2 x\\))
+        `,
+        options: [
+          "\\(\\text{최댓값: }2, \\text{최솟값: }-5\\)",
+          "\\(\\text{최댓값: }2, \\text{최솟값: }-6\\)",
+          "\\(\\text{최댓값: }3, \\text{최솟값: }-6\\)",
+          "\\(\\text{최댓값: }1, \\text{최솟값: }-4\\)"
+        ],
+        answer: 1
+      },
+      {
+        question: `
+        함수 \\(y=\\sin^2 x -4\\cos x +1\\)의 최댓값과 최솟값을 구하여라.
+        (\\(\\sin^2 x=1-\\cos^2 x\\))
+        `,
+        options: [
+          "\\(\\text{최댓값: }5, \\text{최솟값: }-3\\)",
+          "\\(\\text{최댓값: }4, \\text{최솟값: }-2\\)",
+          "\\(\\text{최댓값: }5, \\text{최솟값: }-2\\)",
+          "\\(\\text{최댓값: }6, \\text{최솟값: }-3\\)"
+        ],
+        answer: 0
+      },
+      {
+        question: `
+        함수 \\(y=\\cos^2 x -2\\cos x -2\\)의 최댓값과 최솟값을 구하여라.
+        (\\(\\cos x = t\\))
+        `,
+        options: [
+          "\\(\\text{최댓값: }2, \\text{최솟값: }-3\\)",
+          "\\(\\text{최댓값: }1, \\text{최솟값: }-3\\)",
+          "\\(\\text{최댓값: }1, \\text{최솟값: }-4\\)",
+          "\\(\\text{최댓값: }1, \\text{최솟값: }-2\\)"
+        ],
+        answer: 1
+      },
+      {
+        question: `
+        함수 \\(y=-4\\sin^2 x +4\\cos x +3\\)의 최댓값과 최솟값을 구하여라.
+        (\\(\\sin^2 x=1-\\cos^2 x\\))
+        `,
+        options: [
+          "\\(\\text{최댓값: }7, \\text{최솟값: }-2\\)",
+          "\\(\\text{최댓값: }7, \\text{최솟값: }-1\\)",
+          "\\(\\text{최댓값: }8, \\text{최솟값: }-2\\)",
+          "\\(\\text{최댓값: }7, \\text{최솟값: }-4\\)"
+        ],
+        answer: 0
+      },
+      {
+        question: `
+        함수 \\(y=-\\cos^2 x +\\sin x +3\\)의 최댓값과 최솟값을 구하여라.
+        (\\(\\cos^2 x=1-\\sin^2 x\\))
+        `,
+        options: [
+          "\\(\\text{최댓값: }4, \\text{최솟값: }2\\)",
+          "\\(\\text{최댓값: }4, \\text{최솟값: }\\dfrac{7}{4}\\)",
+          "\\(\\text{최댓값: }3, \\text{최솟값: }\\dfrac{7}{4}\\)",
+          "\\(\\text{최댓값: }4, \\text{최솟값: }1\\)"
+        ],
+        answer: 1
+      },
+
+      // =============== 5) 44~52번  ===============
+      {
+        question: `
+        \\(y=\\cos^2\\bigl(\\dfrac{3\\pi}{2} + x\\bigr) -3\\cos^2 x +2\\sin(\\pi + x)\\)의
+        최댓값을 \\(M\\), 최솟값을 \\(m\\)이라 할 때, \\(M - m\\)을 구하여라.
+        `,
+        options: [
+          "\\(\\dfrac{25}{4}\\)",
+          "4",
+          "\\(\\dfrac{13}{4}\\)",
+          "5"
+        ],
+        answer: 0
+      },
+      {
+        question: `
+        \\(y=\\sin\\bigl(\\dfrac{\\pi}{2}- x\\bigr)+5\\sin^2 x -4\\cos(\\pi - x)\\)의 
+        최댓값을 \\(M\\), 최솟값을 \\(m\\)이라 할 때, \\(M + m\\)을 구하여라.
+        `,
+        options: [
+          "-3","3","6","9"
+        ],
+        answer: 1
+      },
+      {
+        question: `
+        함수 \\(y=-6\\cos^2 x +6\\cos\\bigl(\\dfrac{\\pi}{2}+x\\bigr)+k\\)의 
+        최댓값이 11일 때, 이 함수의 최솟값을 구하여라.
+        (\\(k\\)는 상수)
+        `,
+        options: [
+          "-2",
+          "-\\(\\dfrac{5}{2}\\)",
+          "-3",
+          "-\\(\\dfrac{7}{2}\\)"
+        ],
+        answer: 1
+      },
+      {
+        question: `
+        \\(y=\\cos^2\\bigl(\\dfrac{3}{2}\\pi - x\\bigr)+2\\cos(\\pi - x)\\)의 
+        최댓값과 최솟값의 합을 구하여라.
+        `,
+        options: [
+          "-2","0","2","4"
+        ],
+        answer: 1
+      },
+      {
+        question: `
+        \\(y=2\\sin^2\\bigl(\\dfrac{\\pi}{2}+x\\bigr) -4\\sin(\\pi - x)+1\\)의 
+        최댓값과 최솟값의 합을 구하여라.
+        `,
+        options: [
+          "-2","2","5","8"
+        ],
+        answer: 1
+      },
+      {
+        question: `
+        \\(y=4\\sin^2 x +4\\cos x -1\\)의 최댓값을 \\(M\\), 최솟값을 \\(m\\)이라 할 때, 
+        \\(M + m\\)을 구하여라.
+        `,
+        options: [
+          "-1","0","1","-5"
+        ],
+        answer: 0
+      },
+      {
+        question: `
+        \\(0\\le \\theta \\le \\dfrac{\\pi}{2}\\)일 때, 함수 \\(y=-\\sin^2\\theta+2\\cos\\theta-3\\)의 
+        최솟값을 구하여라.
+        `,
+        options: [
+          "-4","-3","-2","-1"
+        ],
+        answer: 0
+      },
+      {
+        question: `
+        \\(0\\le x\\le \\pi\\)일 때, 함수 
+        \\(f(x)=\\sin^2(\\pi - x)-2\\cos\\bigl(\\dfrac{\\pi}{2}+x\\bigr)+3\\)
+        의 최솟값을 구하여라.
+        `,
+        options: [
+          "0","2","3","4"
+        ],
+        answer: 2
+      },
+      {
+        question: `
+        함수 \\(y=2\\sin^2 x +4\\cos x +k-1\\)의 최댓값이 5일 때 
+        \\(k\\)값과 이 함수의 최솟값을 구하여라.
+        (\\(k\\)는 상수)
+        `,
+        options: [
+          "\\(k=2, \\text{최솟값 }-3\\)",
+          "\\(k=1, \\text{최솟값 }-3\\)",
+          "\\(k=2, \\text{최솟값 }-2\\)",
+          "\\(k=3, \\text{최솟값 }-4\\)"
+        ],
+        answer: 0
+      },
+
+      // =============== 6) 55~58번  ===============
+      {
+        question: `
+        함수 \\(y=2\\sin^2\\bigl(\\dfrac{\\pi}{2}+x\\bigr) -4\\cos(\\pi - x)+1\\)의 
+        최댓값과 최솟값의 합을 구하여라.
+        `,
+        options: [
+          "4","5","6","7"
+        ],
+        answer: 2
+      },
+      {
+        question: `
+        \\(0\\le x<2\\pi\\)이고,
+        \\(y=\\cos^2\\bigl(\\dfrac{\\pi}{2}-x\\bigr)+3\\cos^2 x +2\\sin\\bigl(\\dfrac{3\\pi}{2}+x\\bigr)+1\\)
+        의 최댓값을 \\(M\\), 최솟값을 \\(m\\)이라 할 때, \\(M+m\\)을 구하여라.
+        `,
+        options: [
+          "\\(\\dfrac{13}{2}\\)",
+          "8",
+          "\\(\\dfrac{15}{2}\\)",
+          "7"
+        ],
+        answer: 2
+      },
+      {
+        question: `
+        \\(\\dfrac{\\pi}{2}<x\\le \\pi\\) 일 때,
+        \\(y=2\\tan x -2 +\\tan^2 x\\)의 최솟값을 구하여라.
+        `,
+        options: [
+          "-2","-3","-4","-1"
+        ],
+        answer: 1
+      },
+      {
+        question: `
+        함수 \\(y=\\dfrac{1-\\sin x}{\\sin x +2}\\)의 
+        최댓값을 \\(M\\), 최솊값을 \\(m\\)이라 할 때, \\(M+m\\)을 구하여라.
+        -- "최솊값"->"최솟값" 정정
+        `,
+        options: [
+          "0","1","2","3"
+        ],
+        answer: 2
+      },
+
+      // =============== 7) 61~62번  ===============
+      {
+        question: `
+        함수 \\(f(x)=-\\sin^2 x +2a\\cos x +1\\)의 
+        최솟값이 -4일 때, 양수 \\(a\\)의 값을 구하여라.
+        `,
+        options: [
+          "\\(2\\)",
+          "\\(\\dfrac{5}{2}\\)",
+          "\\(3\\)",
+          "\\(\\dfrac{4}{3}\\)"
+        ],
+        answer: 1
+      },
+      {
+        question: `
+        함수 \\(y=2a\\sin^2 x +2a\\cos x +b\\)의 
+        최댓값이 8, 최솟값이 -1일 때, \\(a>0\\)라고 할 때,
+        \\(ab\\)의 값을 구하여라.
+        `,
+        options: [
+          "\\(5\\)",
+          "\\(6\\)",
+          "\\(7\\)",
+          "\\(8\\)"
+        ],
+        answer: 1
+      }
+    ];
+
+    /********************************************
+     * 전역 변수 및 게임 로직
+     ********************************************/
+    let playerName = "";
+    let questions = [];      // 셔플된 문제들이 들어갈 배열
+    let currentIndex = 0;    // 현재 문제 인덱스
+    let score = 0;           // 점수
+    let lives = 3;           // 기회
+    let gameOver = false;
+    let globalSeconds = 0;   // 전체 진행 시간(초)
+    let globalTimerInterval = null;
+    let difficulty = null;
+
+    // 난이도별 개별 문제 타이머 (energyBar)
+    // 최상: 30초, 상: 40초, 중: 50초, 하: 제한 없음
+    let energyTime = 0;
+    let energyTimerInterval = null;
+    let energyLeft = 0;      // 남은 에너지 (백분율처럼 0~100)
+
+    // 난이도별 점수 배점
+    // 최상: 20점, 상: 15점, 중: 13점, 하: 10점
+    const difficultyScores = {
+      "최상": 20,
+      "상": 15,
+      "중": 13,
+      "하": 10
+    };
+
+    // 난이도별 초깃값
+    // 최상: 30s, 상:40s, 중:50s, 하: Infinity
+    const difficultyTimes = {
+      "최상": 30,
+      "상": 40,
+      "중": 50,
+      "하": Infinity
+    };
+
+    // 문제와 보기 섞기
+    function shuffleArray(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+    }
+
+    function startGame(selectedDifficulty) {
+      // 이름
+      const nameInput = document.getElementById("playerName");
+      if (!nameInput.value.trim()) {
+        alert("이름을 입력하세요.");
+        return;
+      }
+      playerName = nameInput.value.trim();
+
+      // 난이도
+      difficulty = selectedDifficulty;
+
+      // 초기화
+      score = 0;
+      lives = 3;
+      gameOver = false;
+      document.getElementById("score").innerText = score;
+      document.getElementById("lives").innerText = lives;
+      document.getElementById("gameOverMsg").classList.add("hidden");
+      document.getElementById("finalScoreMsg").classList.add("hidden");
+      document.getElementById("scoreSubmitBtn").classList.add("hidden");
+      document.getElementById("response").innerText = "";
+
+      // 문제 목록 모두 가져와서 섞은 뒤 사용
+      questions = JSON.parse(JSON.stringify(allQuestions)); // deep copy
+      shuffleArray(questions); // 문제 순서 셔플
+
+      // 각 문제의 options도 셔플
+      questions.forEach(q => {
+        let indexedOptions = q.options.map((op, i) => ({ text: op, correct: (i === q.answer) }));
+        shuffleArray(indexedOptions);
+        q.options = indexedOptions.map(op => op.text);
+        q.answer = indexedOptions.findIndex(op => op.correct);
+      });
+
+      currentIndex = 0;
+
+      // 난이도별 에너지 시간
+      energyTime = difficultyTimes[difficulty];
+      // 첫 문제 불러오기
+      document.getElementById("name-screen").classList.add("hidden");
+      document.getElementById("game-screen").classList.remove("hidden");
+
+      // 전체 타이머 시작
+      globalSeconds = 0;
+      if (globalTimerInterval) {
+        clearInterval(globalTimerInterval);
+      }
+      globalTimerInterval = setInterval(() => {
+        globalSeconds++;
+        document.getElementById("global-timer").innerText = globalSeconds;
+      }, 1000);
+
+      loadQuestion();
+    }
+
+    function loadQuestion() {
+      if (currentIndex >= questions.length || gameOver) {
+        endGame();
+        return;
+      }
+
+      const qObj = questions[currentIndex];
+      const questionSection = document.getElementById("question-section");
+
+      // 문제 출력
+      questionSection.innerHTML = `
+        <div class="question-container">
+          <div class="question-text">${qObj.question}</div>
+          <div class="options-container">
+          </div>
+          <div id="correctAnswerMsg" class="hidden-correct-answer hidden"></div>
+        </div>
+      `;
+
+      // 보기 출력
+      const optionsContainer = questionSection.querySelector(".options-container");
+      qObj.options.forEach((opt, idx) => {
+        const btn = document.createElement("button");
+        btn.className = "option-btn";
+        btn.innerHTML = opt; // LaTeX
+        btn.onclick = () => checkAnswer(idx);
+        optionsContainer.appendChild(btn);
+      });
+
+      // 수식 렌더링
+      MathJax.typeset();
+
+      // 에너지바 초기화 (남은 시간=energyTime, 단 하 난이도면 무제한)
+      if (energyTimerInterval) {
+        clearInterval(energyTimerInterval);
+      }
+      energyLeft = 100;
+      updateEnergyBar();
+
+      if (isFinite(energyTime)) {
+        energyTimerInterval = setInterval(() => {
+          // 1초에 10번(100ms)에 조금씩 감소 -> 시각적으로 부드럽게
+          energyLeft -= (100 / energyTime) / 10;
+          if (energyLeft <= 0) {
+            energyLeft = 0;
+            clearInterval(energyTimerInterval);
+            // 시간 초과 -> 기회 1 차감, 다음 문제
+            lives--;
+            document.getElementById("lives").innerText = lives;
+            if (lives <= 0) {
+              endGame();
+              return;
+            }
+            showCorrectAnswer();
+            setTimeout(() => {
+              currentIndex++;
+              loadQuestion();
+            }, 1000);
+          }
+          updateEnergyBar();
+        }, 100);
+      } else {
+        // "하" 난이도 -> 시간 제한 없음
+        energyLeft = 100;
+        updateEnergyBar();
+      }
+    }
+
+    function updateEnergyBar() {
+      const fillElem = document.getElementById("energyBarFill");
+      fillElem.style.width = energyLeft + "%";
+    }
+
+    function checkAnswer(selectedIdx) {
+      if (gameOver) return;
+      const qObj = questions[currentIndex];
+      const correctIndex = qObj.answer;
+
+      if (selectedIdx === correctIndex) {
+        // 정답
+        score += difficultyScores[difficulty];
+        document.getElementById("score").innerText = score;
+      } else {
+        // 오답
+        lives--;
+        document.getElementById("lives").innerText = lives;
+        showCorrectAnswer();
+      }
+
+      // 에너지바 타이머 정리
+      if (energyTimerInterval) {
+        clearInterval(energyTimerInterval);
+        energyTimerInterval = null;
+      }
+
+      setTimeout(() => {
+        if (lives <= 0) {
+          endGame();
+          return;
+        }
+        currentIndex++;
+        loadQuestion();
+      }, 1000);
+    }
+
+    function showCorrectAnswer() {
+      const qObj = questions[currentIndex];
+      const correctIndex = qObj.answer;
+      const correctOpt = qObj.options[correctIndex];
+      const msgElem = document.getElementById("correctAnswerMsg");
+      msgElem.innerHTML = "정답: " + correctOpt;
+      msgElem.classList.remove("hidden");
+    }
+
+    function endGame() {
+      gameOver = true;
+      if (globalTimerInterval) {
+        clearInterval(globalTimerInterval);
+        globalTimerInterval = null;
+      }
+      if (energyTimerInterval) {
+        clearInterval(energyTimerInterval);
+        energyTimerInterval = null;
+      }
+
+      document.getElementById("gameOverMsg").classList.remove("hidden");
+      document.getElementById("gameOverMsg").innerText =
+        (lives <= 0) ? "게임 종료! (목숨 소진)" : "게임 끝!";
+
+      document.getElementById("finalScoreMsg").classList.remove("hidden");
+      document.getElementById("finalScoreMsg").innerText =
+        `최종 점수: ${score}점, 총 소요 시간: ${globalSeconds}초`;
+
+      const submitBtn = document.getElementById("scoreSubmitBtn");
+      submitBtn.classList.remove("hidden");
+    }
+
+    /********************************************
+     * 점수 전송 로직
+     ********************************************/
+    async function submitScore() {
+      if (!gameOver) {
+        alert("게임이 끝난 뒤에 전송할 수 있습니다.");
+        return;
+      }
+      saveData(
+        "삼각함수 최대최소", // 게임 이름
+        playerName,
+        score,
+        globalSeconds
+      );
+    }
+
+    async function saveData(game, name, score, elapsedTime) {
+      const FUNCTION_URL = "https://us-central1-record-f420d.cloudfunctions.net/report";
+
+      const requestData = {
+        game,
+        name,
+        score: parseInt(score, 10),
+        elapsedTime: parseInt(elapsedTime, 10)
+      };
+
+      try {
+        const response = await fetch(FUNCTION_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(requestData)
+        });
+
+        const responseData = await response.json();
+
+        if (response.ok) {
+          document.getElementById('response').innerText =
+            `성공: ${JSON.stringify(responseData, null, 2)}`;
+        } else {
+          document.getElementById('response').innerText =
+            `오류: ${JSON.stringify(responseData, null, 2)}`;
+        }
+      } catch (error) {
+        console.error('요청 실패:', error);
+        document.getElementById('response').innerText =
+          `네트워크 오류: ${error.message}`;
+      }
+    }
+  </script>
+</body>
+</html>
